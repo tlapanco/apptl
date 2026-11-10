@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}{{ active_chat.title }} - PersonaAI{% endblock %}
+{% block body_class %}page-chat-active{% endblock %}
+
+{% block content %}
+<div class="chat-layout-wrapper" id="chat-layout" data-chat-id="{{ active_chat.id }}">
+    <!-- Sidebar de Chats -->
+    <aside class="chat-sidebar" id="chat-sidebar">
+        <div class="chat-sidebar-header">
+            <a href="{{ url_for('chats.index') }}" class="btn btn-outline btn-block btn-sm mb-2" id="btn-back-to-chats">
+                ← Ver Todos los Chats
+            </a>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-block" id="btn-new-chat-picker">
+                + Nueva Conversación
+            </a>
+        </div>
+
+        <div class="chat-history-heading">
+            <span>Tus Conversaciones</span>
+        </div>
+
+        <div class="chat-history-list" id="chat-history-container">
+            {% for c in chats %}
+                <div class="chat-history-item-wrapper {% if c.id == active_chat.id %}active{% endif %}" id="chat-item-{{ c.id }}">
+                    <a href="{{ url_for('chats.view_chat', chat_id=c.id) }}" class="chat-history-link">
+                        <span class="chat-history-avatar">{{ c.personality_snapshot.get('avatar', '🤖')|avatar_html }}</span>
+                        <div class="chat-history-info">
+                            <span class="chat-history-title">{{ c.title }}</span>
+                            <div class="chat-history-meta">
+                                <span class="chat-history-version">v{{ c.personality_version or c.personality_snapshot.get('version_number', 1) }}</span>
+                                <span class="chat-history-date">{{ c.updated_at|time_ago }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    <form action="{{ url_for('chats.delete', chat_id=c.id) }}" method="POST" class="delete-chat-form" onsubmit="return confirm('¿Estás seguro de eliminar este chat?');">
+                        <button type="submit" class="btn-delete-chat" title="Eliminar conversación">&times;</button>
+                    </form>
+                </div>
+            {% else %}
+                <p class="sidebar-empty-hint">No hay otras conversaciones.</p>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <!-- Área Principal de Conversación -->
+    <main class="chat-main-area" id="chat-main-area">
+        <!-- Barra Superior de la Personalidad Activa -->
+        <div class="chat-topbar" id="chat-topbar">
+            <div class="chat-topbar-avatar" id="chat-topbar-avatar-element">
+                {{ active_chat.personality_snapshot.get('avatar', '🤖')|avatar_html }}
+            </div>
+            <div class="chat-topbar-details">
+                <div class="chat-title-line">
+                    <h2 class="chat-personality-name">{{ active_chat.personality_snapshot.get('name', 'Asistente IA') }}</h2>
+                    <span class="badge badge-version-active" id="current-version-tag" title="Versión activa en este chat">
+                        v{{ active_chat.personality_version or active_chat.personality_snapshot.get('version_number', 1) }}.0
+                    </span>
+                    <span class="badge" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; border: 1px solid rgba(79, 70, 229, 0.2); font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px;" title="Proveedor: {{ current_ai_provider|upper }} | Endpoint: {{ current_ai_url }}">
+                        🤖 {{ current_ai_provider|upper }}: {{ current_ai_model }}
+                    </span>
+                    {% if personality and personality.current_version > (active_chat.personality_version or 1) %}
+                        <span class="badge badge-version-update" onclick="openVersionModal()" title="¡Hay una nueva versión de esta personalidad disponible!">
+                            ⚡ Nueva v{{ personality.current_version }}.0 disponible
+                        </span>
+                    {% endif %}
+                </div>
+                <p class="chat-personality-prompt-preview" title="{{ active_chat.personality_snapshot.get('system_prompt', '') }}">
+                    {{ active_chat.personality_snapshot.get('system_prompt', '')|truncate(90) }}
+                </p>
+            </div>
+            <div class="chat-topbar-actions">
+                {% if personality and personality.versions and personality.versions|length > 1 %}
+                    <button type="button" class="btn btn-sm btn-outline btn-version-selector" onclick="openVersionModal()" title="Elegir o actualizar versión de la personalidad">
+                        🔄 Versiones ({% if personality %}{{ personality.versions|length }}{% else %}1{% endif %})
+                    </button>
+                {% elif personality and personality.current_version > (active_chat.personality_version or 1) %}
+                    <button type="button" class="btn btn-sm btn-primary" onclick="openVersionModal()" title="Actualizar a la última versión">
+                        ⚡ Actualizar a v{{ personality.current_version }}
+                    </button>
+                {% endif %}
+                <button type="button" class="btn btn-sm btn-outline" id="btn-chat-info-modal" onclick="openChatInfoModal()" title="Ver detalles y rol de la personalidad">
+                    ℹ️ Info
+                </button>
+                {% if active_chat.personality_id %}
+                    <a href="{{ url_for('personalities.detail', id=active_chat.personality_id) }}" class="btn btn-sm btn-outline" title="Ver ficha en la comunidad">
+                        🎭 Ficha
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Banner de Notificación de Actualización de Versión si está desactualizado -->
+        {% if personality and personality.current_version > (active_chat.personality_version or 1) %}
+            <div class="chat-version-notice-bar" id="chat-version-notice">
+                <div class="notice-info">
+                    <span class="notice-icon">📢</span>
+                    <span>El creador actualizó esta personalidad a la <strong>v{{ personality.current_version }}.0</strong> (incluye nuevo avatar/instrucciones).</span>
+                </div>
+                <form action="{{ url_for('chats.sync_personality', chat_id=active_chat.id) }}" method="POST" class="notice-actions-form">
+                    <input type="hidden" name="version" value="{{ personality.current_version }}">
+                    <button type="submit" class="btn btn-xs btn-primary">
+                        Actualizar este chat a v{{ personality.current_version }}.0
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline" onclick="openVersionModal()">
+                        Ver historial
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- Contenedor de Mensajes con Scroll Fijo Exclusivo -->
+        <div class="chat-messages-container" id="chat-messages-container">
+            {% if active_chat.messages %}
+                {% for msg in active_chat.messages %}
+                    <div class="message-bubble-wrapper message-{{ msg.role }}" id="msg-{{ loop.index }}">
+                        <div class="message-avatar">
+                            {% if msg.role == 'user' %}
+                                {{ current_user.avatar|avatar_html(default='👤') }}
+                            {% else %}
+                                {{ active_chat.personality_snapshot.get('avatar', '🤖')|avatar_html }}
+                            {% endif %}
+                        </div>
+                        <div class="message-body">
+                            <div class="message-header">
+                                <span class="message-sender-name">
+                                    {% if msg.role == 'user' %}Tú{% else %}{{ active_chat.personality_snapshot.get('name', 'Asistente') }}{% endif %}
+                                </span>
+                                <span class="message-time">{{ msg.created_at|time_ago }}</span>
+                            </div>
+                            <div class="message-text">{{ msg.content|render_markdown }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="chat-empty-greeting" id="chat-empty-greeting">
+                    <div class="greeting-avatar">{{ active_chat.personality_snapshot.get('avatar', '🤖')|avatar_html }}</div>
+                    <h3>¡Hola! Soy {{ active_chat.personality_snapshot.get('name', 'tu asistente') }}</h3>
+                    <p class="greeting-version-hint">Versión activa: <strong>v{{ active_chat.personality_version or 1 }}.0</strong></p>
+                    <p>Estoy listo para ayudarte con mi rol y conocimientos. Escribe un mensaje abajo para comenzar.</p>
+                </div>
+            {% endif %}
+
+            <!-- Indicador de Carga / Escribiendo -->
+            <div class="typing-indicator-wrapper hidden" id="typing-indicator">
+                <div class="message-avatar">{{ active_chat.personality_snapshot.get('avatar', '🤖')|avatar_html }}</div>
+                <div class="typing-bubble">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra Inferior de Entrada de Texto -->
+        <div class="chat-input-bar" id="chat-input-bar">
+            <form id="chat-form" class="chat-input-form" onsubmit="return false;">
+                <textarea 
+                    id="chat-input-field" 
+                    class="chat-textarea" 
+                    placeholder="Escribe un mensaje para {{ active_chat.personality_snapshot.get('name', 'el asistente') }}... (Enter para enviar)" 
+                    rows="1" 
+                    required 
+                    autofocus
+                ></textarea>
+                <button type="submit" id="btn-send-message" class="btn btn-primary btn-send">
+                    <span class="send-icon">➤</span>
+                </button>
+            </form>
+            <div class="chat-input-hints">
+                <small>Presiona <strong>Enter</strong> para enviar, <strong>Shift + Enter</strong> para nueva línea.</small>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal de Versiones de la Personalidad -->
+{% if personality %}
+<div class="chat-info-modal-backdrop hidden" id="chat-version-modal-backdrop" onclick="closeVersionModal(event)">
+    <div class="chat-info-modal-card version-modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title-row">
+                <span class="modal-avatar">{{ personality.avatar|avatar_html }}</span>
+                <div>
+                    <h3 class="modal-title">Versiones de {{ personality.name }}</h3>
+                    <p class="modal-sub">Elige con qué versión de esta personalidad interactuar en este chat</p>
+                </div>
+            </div>
+            <button type="button" class="btn-close-modal" onclick="closeVersionModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="version-intro-text">
+                Cada versión guarda su propio avatar, descripción e instrucciones del sistema. Puedes actualizar tu conversación a la versión más reciente o mantener una versión anterior según tu preferencia.
+            </p>
+
+            <div class="version-cards-list">
+                {% for v in personality.versions|reverse %}
+                    {% set is_active_in_chat = (v.version_number == (active_chat.personality_version or 1)) %}
+                    <div class="version-history-item {% if is_active_in_chat %}current-chat-version{% endif %}">
+                        <div class="version-item-left">
+                            <span class="version-item-avatar">{{ v.avatar|avatar_html }}</span>
+                            <div class="version-item-meta">
+                                <div class="version-item-header">
+                                    <strong class="version-label-tag">v{{ v.version_number }}.0</strong>
+                                    {% if is_active_in_chat %}
+                                        <span class="badge badge-active-pill">Activa en este chat</span>
+                                    {% endif %}
+                                    {% if v.version_number == personality.current_version %}
+                                        <span class="badge badge-latest-pill">Última publicada</span>
+                                    {% endif %}
+                                </div>
+                                <span class="version-date">{{ v.created_at|format_date }}</span>
+                                <p class="version-notes-text">📝 {{ v.change_notes or 'Actualización de configuración' }}</p>
+                            </div>
+                        </div>
+                        <div class="version-item-actions">
+                            {% if is_active_in_chat %}
+                                <span class="version-in-use-label">✓ En uso</span>
+                            {% else %}
+                                <form action="{{ url_for('chats.sync_personality', chat_id=active_chat.id) }}" method="POST">
+                                    <input type="hidden" name="version" value="{{ v.version_number }}">
+                                    <button type="submit" class="btn btn-sm btn-outline">
+                                        Usar v{{ v.version_number }}.0 en este chat
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="closeVersionModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal de Información de la Personalidad Activa -->
+<div class="chat-info-modal-backdrop hidden" id="chat-info-modal-backdrop" onclick="closeChatInfoModal(event)">
+    <div class="chat-info-modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-title-row">
+                <span class="modal-avatar">{{ active_chat.personality_snapshot.get('avatar', '🤖')|avatar_html }}</span>
+                <div>
+                    <h3 class="modal-title">{{ active_chat.personality_snapshot.get('name', 'Asistente IA') }}</h3>
+                    <div class="modal-badge-group">
+                        <span class="modal-category badge badge-category">{{ active_chat.personality_snapshot.get('category', 'General') }}</span>
+                        <span class="badge badge-version">Versión v{{ active_chat.personality_version or active_chat.personality_snapshot.get('version_number', 1) }}.0</span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close-modal" onclick="closeChatInfoModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-section">
+                <h4>Descripción</h4>
+                <p>{{ active_chat.personality_snapshot.get('description', 'Sin descripción.') }}</p>
+            </div>
+
+            <div class="modal-section">
+                <h4>Instrucciones del Sistema (Snapshot Activo)</h4>
+                <pre class="prompt-text">{{ active_chat.personality_snapshot.get('system_prompt', 'Asistente servicial y respetuoso.') }}</pre>
+            </div>
+
+            <div class="modal-alert-box">
+                <span class="alert-icon">🛡️</span>
+                <p>
+                    <strong>Memoria y estabilidad asegurada:</strong> Este chat opera con un snapshot independiente de la personalidad. Si la personalidad fue eliminada o modificada por su creador, tus conversaciones continúan funcionando con su rol preservado. Puedes actualizar su avatar e instrucciones cuando lo desees desde el selector de versiones.
+                </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            {% if personality %}
+                <button type="button" class="btn btn-outline" onclick="closeChatInfoModal(); openVersionModal();">
+                    🔄 Gestionar Versiones
+                </button>
+                <a href="{{ url_for('personalities.detail', id=personality.id) }}" class="btn btn-outline">
+                    Ver Ficha Pública
+                </a>
+            {% endif %}
+            <button type="button" class="btn btn-primary" onclick="closeChatInfoModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+function openChatInfoModal() {
+    const modal = document.getElementById('chat-info-modal-backdrop');
+    if (modal) modal.classList.remove('hidden');
+}
+function closeChatInfoModal(e) {
+    const modal = document.getElementById('chat-info-modal-backdrop');
+    if (modal) modal.classList.add('hidden');
+}
+
+function openVersionModal() {
+    const modal = document.getElementById('chat-version-modal-backdrop');
+    if (modal) modal.classList.remove('hidden');
+}
+function closeVersionModal(e) {
+    const modal = document.getElementById('chat-version-modal-backdrop');
+    if (modal) modal.classList.add('hidden');
+}
+
+function copyCodeSnippet(buttonEl) {
+    const preEl = buttonEl.closest('.code-block-wrapper').querySelector('code');
+    if (!preEl) return;
+    const textToCopy = preEl.innerText || preEl.textContent;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        const orig = buttonEl.innerText;
+        buttonEl.innerText = '¡Copiado!';
+        buttonEl.classList.add('copied');
+        setTimeout(() => {
+            buttonEl.innerText = orig;
+            buttonEl.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Error al copiar:', err);
+    });
+}
+</script>
+{% endblock %}
+

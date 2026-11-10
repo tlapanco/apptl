@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Cuenta - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" id="auth-register-page">
+    <div class="auth-card" id="register-card">
+        <div class="auth-header">
+            <div class="auth-icon">🚀</div>
+            <h1 class="auth-title">Crear Cuenta</h1>
+            <p class="auth-subtitle">Únete para chatear, crear personalidades únicas y compartirlas</p>
+        </div>
+
+        <form action="{{ url_for('auth.register') }}" method="POST" class="auth-form" id="register-form">
+            <div class="form-group">
+                <label for="username" class="form-label">Nombre de Usuario</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    class="form-control" 
+                    placeholder="ej. alex_dev" 
+                    value="{{ username or '' }}" 
+                    required 
+                    minlength="3" 
+                    maxlength="30"
+                    pattern="[a-zA-Z0-9_\-\.]+"
+                    title="Letras, números y guiones (_ - .)"
+                    autofocus
+                >
+                <small class="form-hint">Mínimo 3 caracteres, alfanumérico.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Correo Electrónico</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    class="form-control" 
+                    placeholder="tu@correo.com" 
+                    value="{{ email or '' }}" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Contraseña</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    class="form-control" 
+                    placeholder="Mínimo 6 caracteres" 
+                    required 
+                    minlength="6"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="avatar" class="form-label">Avatar Emoji</label>
+                <div class="avatar-picker-row">
+                    <input 
+                        type="text" 
+                        id="avatar" 
+                        name="avatar" 
+                        class="form-control avatar-input" 
+                        value="{{ avatar or '👤' }}" 
+                        maxlength="4"
+                    >
+                    <div class="avatar-quick-select">
+                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='👤'">👤</button>
+                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='👨‍💻'">👨‍💻</button>
+                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='👩‍💻'">👩‍💻</button>
+                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='🧙‍♂️'">🧙‍♂️</button>
+                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='🚀'">🚀</button>
+                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='🤖'">🤖</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="bio" class="form-label">Biografía (opcional)</label>
+                <textarea 
+                    id="bio" 
+                    name="bio" 
+                    class="form-control" 
+                    rows="2" 
+                    placeholder="Cuéntanos un poco sobre tus intereses o proyectos..."
+                    maxlength="200"
+                >{{ bio or '' }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="btn-submit-register">
+                Completar Registro
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>¿Ya tienes una cuenta? <a href="{{ url_for('auth.login') }}" class="link-highlight">Inicia sesión</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Comunidad de Personalidades IA - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="page-container" id="community-page">
+    <div class="community-hero">
+        <div class="community-hero-badge">🌍 Comunidad PersonaAI</div>
+        <h1 class="community-title">Explora y Descubre Personalidades de IA</h1>
+        <p class="community-subtitle">Encuentra asistentes creados por la comunidad para programación, estudio, creatividad, negocios y mucho más.</p>
+    </div>
+
+    <!-- Barra de Búsqueda y Filtros -->
+    <div class="filter-card" id="community-filters">
+        <form action="{{ url_for('community.index') }}" method="GET" class="filter-form">
+            <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    name="q" 
+                    id="search-query-input" 
+                    class="form-control search-input" 
+                    placeholder="Buscar por nombre, descripción, tag o @creador..." 
+                    value="{{ feed.current_query }}"
+                >
+            </div>
+
+            <div class="filter-controls-row">
+                <div class="filter-group">
+                    <label for="category-filter" class="filter-label">Categoría:</label>
+                    <select name="category" id="category-filter" class="form-control select-filter" onchange="this.form.submit()">
+                        <option value="all" {% if feed.current_category == 'all' %}selected{% endif %}>Todas las Categorías</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if feed.current_category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="sort-filter" class="filter-label">Ordenar por:</label>
+                    <select name="sort" id="sort-filter" class="form-control select-filter" onchange="this.form.submit()">
+                        <option value="popular" {% if feed.current_sort == 'popular' %}selected{% endif %}>🔥 Más Populares (Likes)</option>
+                        <option value="uses" {% if feed.current_sort == 'uses' %}selected{% endif %}>⚡ Más Utilizados</option>
+                        <option value="recent" {% if feed.current_sort == 'recent' %}selected{% endif %}>✨ Más Recientes</option>
+                        <option value="name" {% if feed.current_sort == 'name' %}selected{% endif %}>🔤 Nombre (A-Z)</option>
+                    </select>
+                </div>
+
+                <div class="filter-buttons">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                    {% if feed.current_query or (feed.current_category != 'all') or feed.current_tag or (feed.current_sort != 'popular') %}
+                        <a href="{{ url_for('community.index') }}" class="btn btn-outline" title="Limpiar filtros">Limpiar</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if feed.current_tag %}
+                <div class="active-tag-indicator">
+                    <span>Filtrando por tag: <strong>#{{ feed.current_tag }}</strong></span>
+                    <a href="{{ url_for('community.index', q=feed.current_query, category=feed.current_category, sort=feed.current_sort) }}" class="tag-remove">&times;</a>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Resultados / Grid de Personalidades -->
+    <div class="community-results-header">
+        <span class="results-count">{{ feed.total }} personalidades encontradas</span>
+    </div>
+
+    {% if feed['items'] %}
+        <div class="personalities-grid">
+            {% for item in feed['items'] %}
+                {% set p = item.personality %}
+                <div class="personality-card community-card" id="comm-card-{{ p.id }}">
+                    <div class="card-top">
+                        <div class="card-avatar">{{ p.avatar|avatar_html }}</div>
+                        <div class="card-meta">
+                            {% if p.is_system %}
+                                <span class="badge badge-system">Oficial</span>
+                            {% else %}
+                                <span class="badge badge-category">{{ p.category }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h3 class="card-title">
+                        <a href="{{ url_for('personalities.detail', id=p.id) }}" class="card-title-link">
+                            {{ p.name }}
+                        </a>
+                    </h3>
+                    <p class="card-description">{{ p.description }}</p>
+
+                    <div class="card-creator-info">
+                        {% if p.is_system %}
+                            <span class="creator-mini">✨ Equipo Oficial</span>
+                        {% elif item.creator_username %}
+                            <a href="{{ url_for('users.profile', username=item.creator_username) }}" class="creator-mini-link">
+                                <span class="creator-avatar-mini">{{ item.creator_avatar|avatar_html(default='👤') }}</span>
+                                <span class="creator-name-mini">@{{ item.creator_name }}</span>
+                            </a>
+                        {% else %}
+                            <span class="creator-mini">👤 Usuario</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-tags">
+                        {% for tag in p.tags[:3] %}
+                            <a href="{{ url_for('community.index', tag=tag) }}" class="tag-chip">#{{ tag }}</a>
+                        {% endfor %}
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="card-stats">
+                            <button 
+                                type="button" 
+                                class="btn-like-mini {% if item.is_liked %}liked{% endif %}" 
+                                data-personality-id="{{ p.id }}"
+                                title="{% if item.is_liked %}Quitar like{% else %}Dar like{% endif %}"
+                            >
+                                <span class="heart-icon">{% if item.is_liked %}❤️{% else %}🤍{% endif %}</span>
+                                <span class="like-counter" id="like-count-{{ p.id }}">{{ p.likes_count }}</span>
+                            </button>
+                            <span class="stat-uses">⚡ {{ p.uses_count }}</span>
+                        </div>
+
+                        <div class="card-actions-group">
+                            <a href="{{ url_for('personalities.detail', id=p.id) }}" class="btn btn-sm btn-outline">
+                                Ver
+                            </a>
+                            <form action="{{ url_for('chats.create') }}" method="POST" class="inline-form">
+                                <input type="hidden" name="personality_id" value="{{ p.id }}">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    💬 Chatear
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Paginación -->
+        {% if feed.pages > 1 %}
+            <div class="pagination-container" id="community-pagination">
+                {% if feed.has_prev %}
+                    <a href="{{ url_for('community.index', page=feed.page-1, q=feed.current_query, category=feed.current_category, tag=feed.current_tag, sort=feed.current_sort) }}" class="page-btn">
+                        &laquo; Anterior
+                    </a>
+                {% endif %}
+
+                <span class="page-info">Página {{ feed.page }} de {{ feed.pages }}</span>
+
+                {% if feed.has_next %}
+                    <a href="{{ url_for('community.index', page=feed.page+1, q=feed.current_query, category=feed.current_category, tag=feed.current_tag, sort=feed.current_sort) }}" class="page-btn">
+                        Siguiente &raquo;
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="empty-state-card">
+            <span class="empty-icon">🔍</span>
+            <h3>No se encontraron personalidades</h3>
+            <p>Intenta ajustar tus términos de búsqueda o filtros de categoría.</p>
+            <a href="{{ url_for('community.index') }}" class="btn btn-outline">Restablecer filtros</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Amigos y Solicitudes - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="page-container" id="friendships-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Gestión de Amigos</h1>
+            <p class="page-subtitle">Conecta con otros usuarios y accede a sus personalidades compartidas para amigos.</p>
+        </div>
+    </div>
+
+    <div class="friendships-grid-layout">
+        <!-- Columna Izquierda: Formulario para añadir amigo y Solicitudes -->
+        <div class="friendships-col-side">
+            <!-- Tarjeta: Enviar Solicitud -->
+            <div class="friendship-card" id="add-friend-card">
+                <div class="card-heading-simple">
+                    <h3>➕ Añadir Nuevo Amigo</h3>
+                </div>
+                <form action="{{ url_for('friendships.send_request') }}" method="POST" class="add-friend-form">
+                    <div class="form-group">
+                        <label for="friend-username" class="form-label">Nombre de usuario:</label>
+                        <div class="input-with-button">
+                            <input 
+                                type="text" 
+                                id="friend-username" 
+                                name="username" 
+                                class="form-control" 
+                                placeholder="ej. usuario_creador" 
+                                required
+                            >
+                            <button type="submit" class="btn btn-primary" id="btn-send-friend-req">Enviar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tarjeta: Solicitudes Recibidas Pendientes -->
+            <div class="friendship-card" id="received-requests-card">
+                <div class="card-heading-simple">
+                    <h3>📬 Solicitudes Recibidas ({{ data.pending_received|length }})</h3>
+                </div>
+                {% if data.pending_received %}
+                    <div class="requests-list">
+                        {% for req in data.pending_received %}
+                            <div class="request-item" id="req-item-{{ req.friendship_id }}">
+                                <div class="req-user-info">
+                                    <span class="req-avatar">{{ req.user.avatar|avatar_html(default='👤') }}</span>
+                                    <div>
+                                        <a href="{{ url_for('users.profile', username=req.user.username) }}" class="req-username">
+                                            @{{ req.user.username }}
+                                        </a>
+                                        <span class="req-time">{{ req.created_at|time_ago }}</span>
+                                    </div>
+                                </div>
+                                <div class="req-actions">
+                                    <form action="{{ url_for('friendships.accept', id=req.friendship_id) }}" method="POST" class="inline-form">
+                                        <button type="submit" class="btn btn-sm btn-primary" title="Aceptar">✓ Aceptar</button>
+                                    </form>
+                                    <form action="{{ url_for('friendships.reject', id=req.friendship_id) }}" method="POST" class="inline-form">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Rechazar">✕</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="empty-state-text">No tienes solicitudes pendientes por responder.</p>
+                {% endif %}
+            </div>
+
+            <!-- Tarjeta: Solicitudes Enviadas Pendientes -->
+            {% if data.pending_sent %}
+                <div class="friendship-card" id="sent-requests-card">
+                    <div class="card-heading-simple">
+                        <h3>⏳ Solicitudes Enviadas ({{ data.pending_sent|length }})</h3>
+                    </div>
+                    <div class="requests-list">
+                        {% for req in data.pending_sent %}
+                            <div class="request-item">
+                                <div class="req-user-info">
+                                    <span class="req-avatar">{{ req.user.avatar|avatar_html(default='👤') }}</span>
+                                    <div>
+                                        <a href="{{ url_for('users.profile', username=req.user.username) }}" class="req-username">
+                                            @{{ req.user.username }}
+                                        </a>
+                                        <span class="req-status-pending">Pendiente de confirmación</span>
+                                    </div>
+                                </div>
+                                <form action="{{ url_for('friendships.reject', id=req.friendship_id) }}" method="POST" class="inline-form">
+                                    <button type="submit" class="btn btn-sm btn-outline" title="Cancelar solicitud">Cancelar</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Columna Derecha: Lista de Amigos Aceptados -->
+        <div class="friendships-col-main">
+            <div class="friendship-card" id="friends-list-card">
+                <div class="card-heading-simple">
+                    <h2>👥 Mis Amigos ({{ data.friends|length }})</h2>
+                </div>
+
+                {% if data.friends %}
+                    <div class="friends-grid">
+                        {% for friend in data.friends %}
+                            <div class="friend-item-card" id="friend-card-{{ friend.user.id }}">
+                                <div class="friend-item-top">
+                                    <span class="friend-avatar-large">{{ friend.user.avatar|avatar_html(default='👤') }}</span>
+                                    <div class="friend-item-details">
+                                        <a href="{{ url_for('users.profile', username=friend.user.username) }}" class="friend-name-link">
+                                            @{{ friend.user.username }}
+                                        </a>
+                                        <p class="friend-bio-snippet">{{ friend.user.bio or 'Sin biografía' }}</p>
+                                    </div>
+                                </div>
+
+                                <div class="friend-item-footer">
+                                    <a href="{{ url_for('users.profile', username=friend.user.username) }}" class="btn btn-sm btn-outline">
+                                        Ver Perfil
+                                    </a>
+                                    <form action="{{ url_for('friendships.remove', target_user_id=friend.user.id) }}" method="POST" class="inline-form" onsubmit="return confirm('¿Deseas eliminar a este amigo?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar de amigos">
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state-card">
+                        <span class="empty-icon">🤝</span>
+                        <h3>Aún no tienes amigos agregados</h3>
+                        <p>Busca usuarios por su nombre de usuario en el panel lateral para compartir personalidades exclusivas.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

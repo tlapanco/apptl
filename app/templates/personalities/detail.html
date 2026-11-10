@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}{{ personality.name }} - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="page-container" id="personality-detail-page">
+    <div class="detail-hero-card">
+        <div class="detail-header-row">
+            <div class="detail-avatar-large">
+                {{ personality.avatar|avatar_html }}
+            </div>
+            <div class="detail-main-info">
+                <div class="detail-badges-row">
+                    {% if personality.is_system %}
+                        <span class="badge badge-system">Oficial del Sistema</span>
+                    {% else %}
+                        <span class="badge badge-visibility badge-{{ personality.visibility }}">
+                            {% if personality.visibility == 'public' %}🌍 Pública{% elif personality.visibility == 'friends' %}👥 Solo Amigos{% else %}🔒 Privada{% endif %}
+                        </span>
+                    {% endif %}
+                    <span class="badge badge-category">{{ personality.category }}</span>
+                    <span class="badge badge-version" title="Versión actual publicada">v{{ personality.current_version }}.0</span>
+                </div>
+                <h1 class="detail-title">{{ personality.name }}</h1>
+                <p class="detail-desc">{{ personality.description }}</p>
+
+                <div class="detail-creator-row">
+                    {% if personality.is_system %}
+                        <span class="creator-badge">✨ Creado por: <strong>Equipo PersonaAI</strong></span>
+                    {% elif owner %}
+                        <span class="creator-badge">
+                            👤 Creado por: 
+                            <a href="{{ url_for('users.profile', username=owner.username) }}" class="creator-link">
+                                <strong>@{{ owner.username }}</strong>
+                            </a>
+                        </span>
+                    {% else %}
+                        <span class="creator-badge">👤 Creado por un usuario</span>
+                    {% endif %}
+                    <span class="detail-date">• Creado: {{ personality.created_at|format_date }}</span>
+                    <span class="detail-date">• Versión: <strong>v{{ personality.current_version }}.0</strong></span>
+                </div>
+            </div>
+
+            <!-- Botones de Acción Primarios -->
+            <div class="detail-actions">
+                <form action="{{ url_for('chats.create') }}" method="POST" class="start-chat-form">
+                    <input type="hidden" name="personality_id" value="{{ personality.id }}">
+                    {% if personality.versions and personality.versions|length > 1 %}
+                        <div class="version-select-row">
+                            <label for="chat_version" class="version-select-label">Versión a usar:</label>
+                            <select name="version" id="chat_version" class="form-control version-select">
+                                {% for v in personality.versions|reverse %}
+                                    <option value="{{ v.version_number }}" {% if v.version_number == personality.current_version %}selected{% endif %}>
+                                        v{{ v.version_number }}.0 {% if v.version_number == personality.current_version %}(Última){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-lg btn-primary btn-chat-hero" id="btn-start-chat-detail">
+                        💬 Iniciar Chat
+                    </button>
+                </form>
+
+                {% if current_user.is_authenticated %}
+                    <button 
+                        type="button" 
+                        class="btn btn-outline btn-like {% if is_liked %}liked{% endif %}" 
+                        data-personality-id="{{ personality.id }}"
+                        id="btn-like-detail"
+                    >
+                        <span class="like-icon">{% if is_liked %}❤️{% else %}🤍{% endif %}</span>
+                        <span class="like-label">{% if is_liked %}Te gusta{% else %}Dar Like{% endif %}</span>
+                        <span class="like-counter" id="like-count-{{ personality.id }}">{{ personality.likes_count }}</span>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Estadísticas Rápidas -->
+        <div class="detail-stats-bar">
+            <div class="detail-stat">
+                <span class="stat-value">⚡ {{ personality.uses_count }}</span>
+                <span class="stat-title">Conversaciones creadas</span>
+            </div>
+            <div class="detail-stat">
+                <span class="stat-value">❤️ {{ personality.likes_count }}</span>
+                <span class="stat-title">Likes de la comunidad</span>
+            </div>
+            <div class="detail-stat">
+                <span class="stat-value">🏷️ {{ personality.tags|length }}</span>
+                <span class="stat-title">Etiquetas asignadas</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secciones Informativas -->
+    <div class="detail-grid">
+        <!-- Prompt del Sistema / Rol -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h3>📜 Instrucciones y Rol del Sistema</h3>
+            </div>
+            <div class="system-prompt-box">
+                <pre class="prompt-text">{{ personality.system_prompt }}</pre>
+            </div>
+        </div>
+
+        <!-- Historial de Versiones -->
+        {% if personality.versions and personality.versions|length > 0 %}
+        <div class="detail-card full-width-card">
+            <div class="detail-card-header">
+                <h3>🔄 Historial de Versiones ({{ personality.versions|length }})</h3>
+            </div>
+            <div class="version-cards-list">
+                {% for v in personality.versions|reverse %}
+                    <div class="version-history-item {% if v.version_number == personality.current_version %}current-chat-version{% endif %}">
+                        <div class="version-item-left">
+                            <span class="version-item-avatar">{{ v.avatar|avatar_html }}</span>
+                            <div class="version-item-meta">
+                                <div class="version-item-header">
+                                    <strong class="version-label-tag">Versión v{{ v.version_number }}.0</strong>
+                                    {% if v.version_number == personality.current_version %}
+                                        <span class="badge badge-latest-pill">Publicación Actual</span>
+                                    {% endif %}
+                                </div>
+                                <span class="version-date">Registrada: {{ v.created_at|format_date }}</span>
+                                <p class="version-notes-text">📝 {{ v.change_notes or 'Actualización de parámetros de personalidad' }}</p>
+                            </div>
+                        </div>
+                        <div class="version-item-actions">
+                            <form action="{{ url_for('chats.create') }}" method="POST">
+                                <input type="hidden" name="personality_id" value="{{ personality.id }}">
+                                <input type="hidden" name="version" value="{{ v.version_number }}">
+                                <button type="submit" class="btn btn-sm btn-outline">
+                                    💬 Chatear con v{{ v.version_number }}.0
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Etiquetas y Opciones de Administración -->
+        <div class="detail-card">
+            <div class="detail-card-header">
+                <h3>🏷️ Etiquetas</h3>
+            </div>
+            <div class="tags-container">
+                {% for tag in personality.tags %}
+                    <a href="{{ url_for('community.index', tag=tag) }}" class="tag-chip-lg">
+                        #{{ tag }}
+                    </a>
+                {% else %}
+                    <p class="text-muted">Sin etiquetas registradas.</p>
+                {% endfor %}
+            </div>
+
+            {% if can_edit %}
+                <div class="owner-controls-box">
+                    <h4>⚙️ Administración de Propietario</h4>
+                    <p>Como creador, puedes modificar la información o eliminar esta personalidad.</p>
+                    <div class="owner-actions-row">
+                        <a href="{{ url_for('personalities.edit', id=personality.id) }}" class="btn btn-outline" id="btn-edit-personality">
+                            ✏️ Editar Personalidad
+                        </a>
+                        <form action="{{ url_for('personalities.delete', id=personality.id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar esta personalidad? Esta acción no se puede deshacer.');">
+                            <button type="submit" class="btn btn-danger" id="btn-delete-personality">
+                                🗑️ Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

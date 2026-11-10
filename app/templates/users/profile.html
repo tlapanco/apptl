@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil de @{{ user.username }} - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="page-container" id="user-profile-page">
+    <div class="profile-hero-card">
+        <div class="profile-avatar-wrapper">
+            <span class="profile-avatar-display">{{ user.avatar|avatar_html(default='👤') }}</span>
+        </div>
+        <div class="profile-info-block">
+            <h1 class="profile-username">@{{ user.username }}</h1>
+            <p class="profile-bio">{{ user.bio or 'Sin biografía disponible.' }}</p>
+            <div class="profile-meta-row">
+                <span>📅 Miembro desde: {{ user.created_at|format_date }}</span>
+                <span>🎭 {{ personalities|length }} personalidades compartidas</span>
+            </div>
+        </div>
+
+        <div class="profile-actions-block">
+            {% if is_self %}
+                <a href="{{ url_for('users.edit_profile') }}" class="btn btn-outline" id="btn-edit-my-profile">
+                    ✏️ Editar Perfil
+                </a>
+            {% elif current_user.is_authenticated %}
+                {% if are_friends %}
+                    <span class="badge badge-success">👥 Son Amigos</span>
+                    <form action="{{ url_for('friendships.remove', target_user_id=user.id) }}" method="POST" class="inline-form" onsubmit="return confirm('¿Eliminar de tus amigos?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar Amistad</button>
+                    </form>
+                {% else %}
+                    <form action="{{ url_for('friendships.send_request') }}" method="POST">
+                        <input type="hidden" name="username" value="{{ user.username }}">
+                        <button type="submit" class="btn btn-primary" id="btn-add-friend-profile">
+                            ➕ Añadir como Amigo
+                        </button>
+                    </form>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Personalidades públicas del usuario -->
+    <div class="content-section" style="margin-top: 2rem;">
+        <div class="section-title-bar">
+            <h2>Personalidades creadas por @{{ user.username }}</h2>
+        </div>
+
+        {% if personalities %}
+            <div class="personalities-grid">
+                {% for p in personalities %}
+                    <div class="personality-card" id="user-card-{{ p.id }}">
+                        <div class="card-top">
+                            <div class="card-avatar">{{ p.avatar|avatar_html }}</div>
+                            <div class="card-meta">
+                                <span class="badge badge-category">{{ p.category }}</span>
+                            </div>
+                        </div>
+                        <h3 class="card-title">{{ p.name }}</h3>
+                        <p class="card-description">{{ p.description }}</p>
+
+                        <div class="card-tags">
+                            {% for tag in p.tags %}
+                                <span class="tag-chip">#{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="card-stats">
+                                <span class="stat-item">⚡ {{ p.uses_count }} usos</span>
+                                <span class="stat-item">❤️ {{ p.likes_count }} likes</span>
+                            </div>
+                            <div class="card-actions-group">
+                                <a href="{{ url_for('personalities.detail', id=p.id) }}" class="btn btn-sm btn-outline">
+                                    Detalle
+                                </a>
+                                <form action="{{ url_for('chats.create') }}" method="POST" class="inline-form">
+                                    <input type="hidden" name="personality_id" value="{{ p.id }}">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        Chatear
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state-card">
+                <span class="empty-icon">📂</span>
+                <h3>Sin personalidades públicas</h3>
+                <p>Este usuario no tiene personalidades públicas disponibles en este momento.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

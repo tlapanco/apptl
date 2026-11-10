@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout" id="dashboard-main-view">
+    <!-- Sidebar Izquierda -->
+    <aside class="dashboard-sidebar" id="dashboard-sidebar">
+        <div class="sidebar-user-card">
+            <div class="user-card-avatar">{{ current_user.avatar|avatar_html(default='👤') }}</div>
+            <div class="user-card-info">
+                <h3 class="user-card-name">@{{ current_user.username }}</h3>
+                <span class="user-card-email">{{ current_user.email }}</span>
+            </div>
+        </div>
+
+        <div class="sidebar-stats-row">
+            <div class="stat-pill" title="Amigos aceptados">
+                <span class="stat-num">{{ friends_count }}</span>
+                <span class="stat-lbl">Amigos</span>
+            </div>
+            <div class="stat-pill" title="Personalidades creadas">
+                <span class="stat-num">{{ my_personalities|length }}</span>
+                <span class="stat-lbl">Mis IA</span>
+            </div>
+            {% if pending_requests_count > 0 %}
+                <a href="{{ url_for('friendships.index') }}" class="stat-pill highlight-pill" title="Solicitudes pendientes">
+                    <span class="stat-num">+{{ pending_requests_count }}</span>
+                    <span class="stat-lbl">Solicitudes</span>
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="sidebar-menu">
+            <h4 class="sidebar-section-title">Navegación</h4>
+            <a href="{{ url_for('personalities.create') }}" class="sidebar-btn sidebar-btn-primary" id="btn-sidebar-create">
+                <span class="btn-icon">✨</span> Nueva Personalidad
+            </a>
+            <a href="{{ url_for('chats.index') }}" class="sidebar-link" id="btn-sidebar-chats">
+                <span class="btn-icon">💬</span> Mis Conversaciones
+            </a>
+            <a href="{{ url_for('personalities.index') }}" class="sidebar-link" id="btn-sidebar-personalities">
+                <span class="btn-icon">🎭</span> Mis Personalidades
+            </a>
+            <a href="{{ url_for('community.index') }}" class="sidebar-link" id="btn-sidebar-community">
+                <span class="btn-icon">🌍</span> Explorar Comunidad
+            </a>
+            <a href="{{ url_for('friendships.index') }}" class="sidebar-link" id="btn-sidebar-friends">
+                <span class="btn-icon">👥</span> Gestionar Amigos
+            </a>
+            <a href="{{ url_for('users.profile', username=current_user.username) }}" class="sidebar-link" id="btn-sidebar-profile">
+                <span class="btn-icon">⚙️</span> Mi Perfil
+            </a>
+        </div>
+
+        <!-- Chats Recientes en Sidebar -->
+        <div class="sidebar-chats-section">
+            <div class="sidebar-section-header">
+                <h4 class="sidebar-section-title">Chats Recientes</h4>
+                <a href="{{ url_for('chats.index') }}" class="section-link-sm" title="Ver todas las conversaciones">Ver todos →</a>
+            </div>
+            {% if recent_chats %}
+                <div class="sidebar-chat-list">
+                    {% for c in recent_chats %}
+                        <a href="{{ url_for('chats.view_chat', chat_id=c.id) }}" class="sidebar-chat-item" id="sidebar-chat-{{ c.id }}">
+                            <span class="chat-item-avatar">{{ c.personality_snapshot.get('avatar', '🤖')|avatar_html }}</span>
+                            <div class="chat-item-content">
+                                <span class="chat-item-title">{{ c.title }}</span>
+                                <span class="chat-item-time">{{ c.updated_at|time_ago }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="sidebar-empty-hint">No tienes conversaciones activas aún.</p>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Contenido Central del Dashboard -->
+    <section class="dashboard-content" id="dashboard-content-area">
+        <!-- Banner de Bienvenida -->
+        <div class="welcome-banner" id="welcome-banner">
+            <div class="welcome-text">
+                <h1>Hola, <span class="text-accent">@{{ current_user.username }}</span> 👋</h1>
+                <p>Elige una personalidad con la cual conversar o descubre creaciones de la comunidad.</p>
+            </div>
+            <div class="welcome-actions">
+                <a href="{{ url_for('personalities.create') }}" class="btn btn-primary" id="btn-welcome-create">
+                    + Crear Personalidad
+                </a>
+                <a href="{{ url_for('community.index') }}" class="btn btn-outline" id="btn-welcome-explore">
+                    Explorar Comunidad
+                </a>
+            </div>
+        </div>
+
+        <!-- Estado de Configuración del Proveedor de IA Activo -->
+        <div class="ai-provider-info-banner" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; margin-top: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <span style="font-size: 1.5rem;">⚙️</span>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <strong style="font-size: 0.95rem; color: #1e293b;">Proveedor IA:</strong>
+                        <span style="background: #4f46e5; color: #ffffff; padding: 0.15rem 0.55rem; border-radius: 6px; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">{{ current_ai_provider }}</span>
+                        {% if current_ai_provider == 'ollama' %}
+                            <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Ollama (Local / Endpoints)</span>
+                        {% else %}
+                            <span style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">OpenRouter (Cloud)</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.2rem;">
+                        Modelo: <code style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 4px; color: #0f172a; font-weight: 600;">{{ current_ai_model }}</code>
+                        &bull; URL / Servidor: <code style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 4px; color: #0f172a;">{{ current_ai_url }}</code>
+                    </div>
+                </div>
+            </div>
+            <div style="font-size: 0.78rem; color: #94a3b8; text-align: right;">
+                Configurable en <code>app/config/settings.py</code> &bull; <code>ai_config.py</code> &bull; <code>.env</code>
+            </div>
+        </div>
+
+        <!-- Sección 1: Personalidades del Sistema (Recomendadas) -->
+        <div class="dashboard-section" id="section-system-personalities">
+            <div class="section-heading">
+                <div>
+                    <h2>Personalidades Oficiales</h2>
+                    <p class="section-sub">Especialistas listos para interactuar de inmediato</p>
+                </div>
+            </div>
+
+            <div class="personalities-grid">
+                {% for p in system_personalities %}
+                    <div class="personality-card system-card" id="card-personality-{{ p.id }}">
+                        <div class="card-top">
+                            <div class="card-avatar">{{ p.avatar|avatar_html }}</div>
+                            <div class="card-meta">
+                                <span class="badge badge-system">Oficial</span>
+                                <span class="badge badge-category">{{ p.category }}</span>
+                            </div>
+                        </div>
+                        <h3 class="card-title">{{ p.name }}</h3>
+                        <p class="card-description">{{ p.description }}</p>
+                        
+                        <div class="card-tags">
+                            {% for tag in p.tags[:3] %}
+                                <span class="tag-chip">#{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="card-stats">
+                                <span class="stat-item" title="Usos">⚡ {{ p.uses_count }} usos</span>
+                                <span class="stat-item" title="Likes">❤️ {{ p.likes_count }}</span>
+                            </div>
+                            <form action="{{ url_for('chats.create') }}" method="POST" class="inline-form">
+                                <input type="hidden" name="personality_id" value="{{ p.id }}">
+                                <button type="submit" class="btn btn-sm btn-primary btn-chat" id="btn-chat-{{ p.id }}">
+                                    💬 Chatear
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sección 2: Mis Personalidades -->
+        <div class="dashboard-section" id="section-my-personalities">
+            <div class="section-heading">
+                <div>
+                    <h2>Mis Personalidades Creadas</h2>
+                    <p class="section-sub">Personalidades diseñadas y configuradas por ti</p>
+                </div>
+                <a href="{{ url_for('personalities.create') }}" class="link-action">+ Nueva</a>
+            </div>
+
+            {% if my_personalities %}
+                <div class="personalities-grid">
+                    {% for p in my_personalities %}
+                        <div class="personality-card user-card" id="card-my-personality-{{ p.id }}">
+                            <div class="card-top">
+                                <div class="card-avatar">{{ p.avatar|avatar_html }}</div>
+                                <div class="card-meta">
+                                    <span class="badge badge-visibility badge-{{ p.visibility }}">
+                                        {% if p.visibility == 'public' %}🌍 Pública{% elif p.visibility == 'friends' %}👥 Amigos{% else %}🔒 Privada{% endif %}
+                                    </span>
+                                    <span class="badge badge-category">{{ p.category }}</span>
+                                </div>
+                            </div>
+                            <h3 class="card-title">{{ p.name }}</h3>
+                            <p class="card-description">{{ p.description }}</p>
+                            
+                            <div class="card-tags">
+                                {% for tag in p.tags[:3] %}
+                                    <span class="tag-chip">#{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <div class="card-footer">
+                                <div class="card-stats">
+                                    <span class="stat-item">⚡ {{ p.uses_count }} usos</span>
+                                    <span class="stat-item">❤️ {{ p.likes_count }}</span>
+                                </div>
+                                <div class="card-buttons">
+                                    <a href="{{ url_for('personalities.detail', id=p.id) }}" class="btn btn-sm btn-outline">
+                                        Ver
+                                    </a>
+                                    <form action="{{ url_for('chats.create') }}" method="POST" class="inline-form">
+                                        <input type="hidden" name="personality_id" value="{{ p.id }}">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            Chatear
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-card">
+                    <span class="empty-icon">🎨</span>
+                    <h3>Aún no has creado personalidades</h3>
+                    <p>Diseña un asistente con un tono, rol y conocimientos personalizados.</p>
+                    <a href="{{ url_for('personalities.create') }}" class="btn btn-primary">
+                        Crear mi primera personalidad
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

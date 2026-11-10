@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Personalidades - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="page-container" id="personalities-index-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Personalidades de IA</h1>
+            <p class="page-subtitle">Gestiona tus propias creaciones y consulta las personalidades oficiales del sistema.</p>
+        </div>
+        <a href="{{ url_for('personalities.create') }}" class="btn btn-primary" id="btn-create-personality-top">
+            + Crear Nueva Personalidad
+        </a>
+    </div>
+
+    <!-- Sección: Creadas por Mí -->
+    <div class="content-section" id="my-creations-section">
+        <div class="section-title-bar">
+            <h2>Creadas por Mí ({{ my_personalities|length }})</h2>
+        </div>
+
+        {% if my_personalities %}
+            <div class="personalities-grid">
+                {% for p in my_personalities %}
+                    <div class="personality-card" id="my-personality-card-{{ p.id }}">
+                        <div class="card-top">
+                            <div class="card-avatar">{{ p.avatar|avatar_html }}</div>
+                            <div class="card-meta">
+                                <span class="badge badge-visibility badge-{{ p.visibility }}">
+                                    {% if p.visibility == 'public' %}🌍 Pública{% elif p.visibility == 'friends' %}👥 Amigos{% else %}🔒 Privada{% endif %}
+                                </span>
+                                <span class="badge badge-category">{{ p.category }}</span>
+                            </div>
+                        </div>
+                        <h3 class="card-title">{{ p.name }}</h3>
+                        <p class="card-description">{{ p.description }}</p>
+
+                        <div class="card-tags">
+                            {% for tag in p.tags %}
+                                <span class="tag-chip">#{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="card-stats">
+                                <span class="stat-item" title="Conversaciones creadas">⚡ {{ p.uses_count }}</span>
+                                <span class="stat-item" title="Likes recibidos">❤️ {{ p.likes_count }}</span>
+                            </div>
+                            <div class="card-actions-group">
+                                <a href="{{ url_for('personalities.edit', id=p.id) }}" class="btn btn-sm btn-outline" title="Editar personalidad">
+                                    ✏️
+                                </a>
+                                <a href="{{ url_for('personalities.detail', id=p.id) }}" class="btn btn-sm btn-outline">
+                                    Detalle
+                                </a>
+                                <form action="{{ url_for('chats.create') }}" method="POST" class="inline-form">
+                                    <input type="hidden" name="personality_id" value="{{ p.id }}">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        Chatear
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state-card">
+                <span class="empty-icon">🎭</span>
+                <h3>Aún no has creado ninguna personalidad</h3>
+                <p>Crea asistentes personalizados con instrucciones, tonos y conocimientos únicos.</p>
+                <a href="{{ url_for('personalities.create') }}" class="btn btn-primary">Crear mi primera personalidad</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Sección: Oficiales del Sistema -->
+    <div class="content-section" id="system-personalities-section" style="margin-top: 3rem;">
+        <div class="section-title-bar">
+            <h2>Personalidades del Sistema (Oficiales)</h2>
+        </div>
+
+        <div class="personalities-grid">
+            {% for p in system_personalities %}
+                <div class="personality-card system-card" id="sys-personality-card-{{ p.id }}">
+                    <div class="card-top">
+                        <div class="card-avatar">{{ p.avatar|avatar_html }}</div>
+                        <div class="card-meta">
+                            <span class="badge badge-system">Oficial</span>
+                            <span class="badge badge-category">{{ p.category }}</span>
+                        </div>
+                    </div>
+                    <h3 class="card-title">{{ p.name }}</h3>
+                    <p class="card-description">{{ p.description }}</p>
+
+                    <div class="card-tags">
+                        {% for tag in p.tags %}
+                            <span class="tag-chip">#{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="card-footer">
+                        <div class="card-stats">
+                            <span class="stat-item" title="Conversaciones creadas">⚡ {{ p.uses_count }}</span>
+                            <span class="stat-item" title="Likes recibidos">❤️ {{ p.likes_count }}</span>
+                        </div>
+                        <div class="card-actions-group">
+                            <a href="{{ url_for('personalities.detail', id=p.id) }}" class="btn btn-sm btn-outline">
+                                Detalle
+                            </a>
+                            <form action="{{ url_for('chats.create') }}" method="POST" class="inline-form">
+                                <input type="hidden" name="personality_id" value="{{ p.id }}">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    Chatear
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

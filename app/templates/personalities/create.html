@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Personalidad - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="form-page-container" id="create-personality-page">
+    <div class="form-card">
+        <div class="form-card-header">
+            <div class="form-header-icon">✨</div>
+            <h1>Crear Nueva Personalidad</h1>
+            <p>Define el comportamiento, tono, conocimientos y visibilidad de tu IA.</p>
+        </div>
+
+        <form action="{{ url_for('personalities.create') }}" method="POST" enctype="multipart/form-data" class="personality-form" id="create-personality-form">
+            <div class="form-group">
+                <label for="name" class="form-label">Nombre de la Personalidad <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="name" 
+                    name="name" 
+                    class="form-control" 
+                    placeholder="Ej. Arquitecto Cloud, Profesor de Historia, Asistente Legal" 
+                    value="{{ name or '' }}" 
+                    required 
+                    maxlength="60"
+                    autofocus
+                >
+            </div>
+
+            <!-- Selector de Avatar Flexible: Emoji o Imagen / Subida -->
+            <div class="form-group avatar-customizer-box">
+                <label class="form-label">Avatar de la Personalidad (Emoji o Imagen)</label>
+                <div class="avatar-builder-container">
+                    <!-- Vista previa en vivo -->
+                    <div class="avatar-preview-wrapper" id="avatar-preview-box">
+                        <span id="avatar-preview-display">{{ avatar|avatar_html(default='🤖') if avatar else '🤖' }}</span>
+                    </div>
+
+                    <div class="avatar-builder-controls">
+                        <!-- Pestañas de modo -->
+                        <div class="avatar-type-tabs">
+                            <button type="button" class="avatar-tab-btn active" data-tab="emoji" onclick="setAvatarMode('emoji')">🎭 Emoji</button>
+                            <button type="button" class="avatar-tab-btn" data-tab="url" onclick="setAvatarMode('url')">🔗 URL Imagen</button>
+                            <button type="button" class="avatar-tab-btn" data-tab="file" onclick="setAvatarMode('file')">📁 Subir Imagen</button>
+                        </div>
+                        <input type="hidden" name="avatar_type" id="avatar_type_field" value="emoji">
+
+                        <!-- Panel 1: Emoji -->
+                        <div class="avatar-panel" id="panel-avatar-emoji">
+                            <div class="avatar-input-row">
+                                <input 
+                                    type="text" 
+                                    id="avatar" 
+                                    name="avatar" 
+                                    class="form-control avatar-input" 
+                                    value="{{ avatar or '🤖' }}" 
+                                    placeholder="🤖"
+                                    oninput="updateAvatarPreviewEmoji(this.value)"
+                                >
+                                <div class="avatar-quick-select">
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🤖')">🤖</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('💻')">💻</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🧠')">🧠</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🎓')">🎓</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('⚖️')">⚖️</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🎨')">🎨</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('📈')">📈</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🩺')">🩺</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🧙‍♂️')">🧙‍♂️</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🚀')">🚀</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel 2: URL de Imagen -->
+                        <div class="avatar-panel hidden" id="panel-avatar-url">
+                            <input 
+                                type="url" 
+                                id="avatar_url" 
+                                name="avatar_url" 
+                                class="form-control" 
+                                placeholder="https://ejemplo.com/mi-avatar.png (PNG, JPG, WEBP, SVG)"
+                                oninput="updateAvatarPreviewUrl(this.value)"
+                            >
+                            <small class="form-hint">Pega el enlace directo a una imagen pública en internet.</small>
+                        </div>
+
+                        <!-- Panel 3: Subir Archivo -->
+                        <div class="avatar-panel hidden" id="panel-avatar-file">
+                            <input 
+                                type="file" 
+                                id="avatar_file" 
+                                name="avatar_file" 
+                                class="form-control file-input" 
+                                accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+                                onchange="previewUploadedImage(this)"
+                            >
+                            <small class="form-hint">Sube un archivo de imagen desde tu equipo (PNG, JPG, WEBP, GIF, SVG).</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">Descripción Breve <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="description" 
+                    name="description" 
+                    class="form-control" 
+                    placeholder="Describe en una frase qué hace esta personalidad o para qué es útil" 
+                    value="{{ description or '' }}" 
+                    required 
+                    maxlength="150"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="system_prompt" class="form-label">
+                    System Prompt (Instrucciones del Sistema) <span class="required">*</span>
+                </label>
+                <textarea 
+                    id="system_prompt" 
+                    name="system_prompt" 
+                    class="form-control code-textarea" 
+                    rows="6" 
+                    placeholder="Instrucciones que moldearán las respuestas de la IA. Ejemplo:&#10;Eres un consultor senior en ciberseguridad. Respondes con enfoque en análisis de riesgos, principios Zero-Trust y mitigación práctica. Evita lenguaje excesivamente técnico sin antes explicarlo..." 
+                    required
+                >{{ system_prompt or '' }}</textarea>
+                <small class="form-hint">Este prompt moldea las respuestas de la IA (utilizando tu proveedor configurado: Ollama u OpenRouter).</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <label for="category" class="form-label">Categoría</label>
+                    <select id="category" name="category" class="form-control">
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group flex-1">
+                    <label for="visibility" class="form-label">Nivel de Visibilidad</label>
+                    <select id="visibility" name="visibility" class="form-control">
+                        <option value="public" {% if visibility == 'public' %}selected{% endif %}>🌍 Pública (Visible en la Comunidad)</option>
+                        <option value="friends" {% if visibility == 'friends' %}selected{% endif %}>👥 Solo Amigos (Tú y tus amigos aceptados)</option>
+                        <option value="private" {% if visibility == 'private' %}selected{% endif %}>🔒 Privada (Solo tú puedes verla y usarla)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="tags" class="form-label">Etiquetas / Tags</label>
+                <input 
+                    type="text" 
+                    id="tags" 
+                    name="tags" 
+                    class="form-control" 
+                    placeholder="Separadas por comas. Ej: Python, DevOps, Linux, Productividad" 
+                    value="{{ tags or '' }}"
+                >
+                <small class="form-hint">Ayudan a encontrar tu personalidad en la búsqueda de la comunidad.</small>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('personalities.index') }}" class="btn btn-outline">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btn-save-personality">Guardar Personalidad</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/avatar_picker.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Editar {{ personality.name }} - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="form-page-container" id="edit-personality-page">
+    <div class="form-card">
+        <div class="form-card-header">
+            <div class="form-header-icon">✏️</div>
+            <h1>Editar Personalidad</h1>
+            <p>Modifica la configuración de tu asistente IA.</p>
+        </div>
+
+        <form action="{{ url_for('personalities.edit', id=personality.id) }}" method="POST" enctype="multipart/form-data" class="personality-form" id="edit-personality-form">
+            <div class="form-group">
+                <label for="name" class="form-label">Nombre de la Personalidad <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="name" 
+                    name="name" 
+                    class="form-control" 
+                    value="{{ personality.name }}" 
+                    required 
+                    maxlength="60"
+                    autofocus
+                >
+            </div>
+
+            <!-- Selector de Avatar Flexible: Emoji o Imagen / Subida -->
+            <div class="form-group avatar-customizer-box">
+                <label class="form-label">Avatar de la Personalidad (Emoji o Imagen)</label>
+                <div class="avatar-builder-container">
+                    <!-- Vista previa en vivo -->
+                    <div class="avatar-preview-wrapper" id="avatar-preview-box">
+                        <span id="avatar-preview-display">{{ personality.avatar|avatar_html(default='🤖') }}</span>
+                    </div>
+
+                    <div class="avatar-builder-controls">
+                        <!-- Pestañas de modo -->
+                        <div class="avatar-type-tabs">
+                            <button type="button" class="avatar-tab-btn {% if not personality.avatar or not is_image_avatar(personality.avatar) %}active{% endif %}" data-tab="emoji" onclick="setAvatarMode('emoji')">🎭 Emoji</button>
+                            <button type="button" class="avatar-tab-btn {% if personality.avatar and is_image_avatar(personality.avatar) and not personality.avatar.startswith('/static/uploads/') %}active{% endif %}" data-tab="url" onclick="setAvatarMode('url')">🔗 URL Imagen</button>
+                            <button type="button" class="avatar-tab-btn {% if personality.avatar and personality.avatar.startswith('/static/uploads/') %}active{% endif %}" data-tab="file" onclick="setAvatarMode('file')">📁 Subir Imagen</button>
+                        </div>
+                        <input type="hidden" name="avatar_type" id="avatar_type_field" value="{% if personality.avatar and personality.avatar.startswith('/static/uploads/') %}file{% elif personality.avatar and is_image_avatar(personality.avatar) %}url{% else %}emoji{% endif %}">
+
+                        <!-- Panel 1: Emoji -->
+                        <div class="avatar-panel {% if personality.avatar and is_image_avatar(personality.avatar) %}hidden{% endif %}" id="panel-avatar-emoji">
+                            <div class="avatar-input-row">
+                                <input 
+                                    type="text" 
+                                    id="avatar" 
+                                    name="avatar" 
+                                    class="form-control avatar-input" 
+                                    value="{% if not is_image_avatar(personality.avatar) %}{{ personality.avatar or '🤖' }}{% else %}🤖{% endif %}" 
+                                    placeholder="🤖"
+                                    oninput="updateAvatarPreviewEmoji(this.value)"
+                                >
+                                <div class="avatar-quick-select">
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🤖')">🤖</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('💻')">💻</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🧠')">🧠</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🎓')">🎓</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('⚖️')">⚖️</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🎨')">🎨</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('📈')">📈</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🩺')">🩺</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🧙‍♂️')">🧙‍♂️</button>
+                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🚀')">🚀</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel 2: URL de Imagen -->
+                        <div class="avatar-panel {% if not personality.avatar or not is_image_avatar(personality.avatar) or personality.avatar.startswith('/static/uploads/') %}hidden{% endif %}" id="panel-avatar-url">
+                            <input 
+                                type="url" 
+                                id="avatar_url" 
+                                name="avatar_url" 
+                                class="form-control" 
+                                placeholder="https://ejemplo.com/mi-avatar.png (PNG, JPG, WEBP, SVG)"
+                                value="{% if is_image_avatar(personality.avatar) and not personality.avatar.startswith('/static/uploads/') %}{{ personality.avatar }}{% endif %}"
+                                oninput="updateAvatarPreviewUrl(this.value)"
+                            >
+                            <small class="form-hint">Pega el enlace directo a una imagen pública en internet.</small>
+                        </div>
+
+                        <!-- Panel 3: Subir Archivo -->
+                        <div class="avatar-panel {% if not personality.avatar or not personality.avatar.startswith('/static/uploads/') %}hidden{% endif %}" id="panel-avatar-file">
+                            <input 
+                                type="file" 
+                                id="avatar_file" 
+                                name="avatar_file" 
+                                class="form-control file-input" 
+                                accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+                                onchange="previewUploadedImage(this)"
+                            >
+                            <small class="form-hint">Sube una nueva imagen para reemplazar el avatar actual.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">Descripción Breve <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="description" 
+                    name="description" 
+                    class="form-control" 
+                    value="{{ personality.description }}" 
+                    required 
+                    maxlength="150"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="system_prompt" class="form-label">
+                    System Prompt (Instrucciones del Sistema) <span class="required">*</span>
+                </label>
+                <textarea 
+                    id="system_prompt" 
+                    name="system_prompt" 
+                    class="form-control code-textarea" 
+                    rows="6" 
+                    required
+                >{{ personality.system_prompt }}</textarea>
+                <small class="form-hint">Nota: Las conversaciones ya iniciadas conservan su snapshot original.</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <label for="category" class="form-label">Categoría</label>
+                    <select id="category" name="category" class="form-control">
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if personality.category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group flex-1">
+                    <label for="visibility" class="form-label">Nivel de Visibilidad</label>
+                    <select id="visibility" name="visibility" class="form-control">
+                        <option value="public" {% if personality.visibility == 'public' %}selected{% endif %}>🌍 Pública (Visible en la Comunidad)</option>
+                        <option value="friends" {% if personality.visibility == 'friends' %}selected{% endif %}>👥 Solo Amigos (Tú y tus amigos aceptados)</option>
+                        <option value="private" {% if personality.visibility == 'private' %}selected{% endif %}>🔒 Privada (Solo tú puedes verla y usarla)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="tags" class="form-label">Etiquetas / Tags</label>
+                <input 
+                    type="text" 
+                    id="tags" 
+                    name="tags" 
+                    class="form-control" 
+                    value="{{ personality.tags|join(', ') }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="change_notes" class="form-label">Notas de Cambio (Versión v{{ personality.current_version + 1 }}.0)</label>
+                <input 
+                    type="text" 
+                    id="change_notes" 
+                    name="change_notes" 
+                    class="form-control" 
+                    placeholder="Ej. Nuevo avatar oficial, mejoras en las respuestas, tono más técnico..."
+                    maxlength="200"
+                >
+                <small class="form-hint">Cada edición crea una nueva versión histórica (v{{ personality.current_version + 1 }}.0) que los usuarios pueden elegir o sincronizar en sus chats.</small>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('personalities.detail', id=personality.id) }}" class="btn btn-outline">Cancelar</a>
+                <button type="submit" class="btn btn-primary" id="btn-update-personality">Guardar Nueva Versión (v{{ personality.current_version + 1 }}.0)</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/avatar_picker.js') }}"></script>
+{% endblock %}

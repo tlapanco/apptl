@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Conversaciones - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="chats-hub-wrapper" id="chats-hub-view">
+    <!-- Encabezado de la Sección -->
+    <div class="hub-header" id="chats-hub-header">
+        <div class="hub-header-info">
+            <div class="hub-header-title-row">
+                <span class="hub-icon">💬</span>
+                <h1>Mis Conversaciones</h1>
+                <span class="hub-count-badge" id="chats-count-badge">{{ chats|length }}</span>
+            </div>
+            <p class="hub-subtitle">
+                Explora, retoma o administra todas tus sesiones de chat activas con asistentes y personalidades.
+            </p>
+        </div>
+        <div class="hub-header-actions">
+            <button type="button" class="btn btn-primary" id="btn-open-new-chat-modal" onclick="openNewChatModal()">
+                + Nueva Conversación
+            </button>
+            <a href="{{ url_for('community.index') }}" class="btn btn-outline" id="btn-explore-community">
+                🌍 Explorar Comunidad
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <div class="hub-filter-bar" id="chats-filter-bar">
+        <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input 
+                type="text" 
+                id="chat-search-input" 
+                class="form-control search-input" 
+                placeholder="Buscar por título de chat, personalidad o contenido..."
+                onkeyup="filterChats(this.value)"
+            >
+            <button type="button" class="search-clear-btn" id="btn-clear-search" onclick="clearSearch()" style="display:none;">&times;</button>
+        </div>
+
+        <div class="hub-quick-filters">
+            <button type="button" class="filter-pill active" data-filter="all" onclick="setQuickFilter('all', this)">
+                Todos ({{ chats|length }})
+            </button>
+            <button type="button" class="filter-pill" data-filter="active" onclick="setQuickFilter('active', this)">
+                Con Mensajes
+            </button>
+            <button type="button" class="filter-pill" data-filter="empty" onclick="setQuickFilter('empty', this)">
+                Sin Mensajes
+            </button>
+        </div>
+    </div>
+
+    <!-- Lista / Grilla de Conversaciones -->
+    {% if chats %}
+        <div class="chats-hub-grid" id="chats-grid-container">
+            {% for c in chats %}
+                <div 
+                    class="chat-hub-card" 
+                    id="hub-chat-card-{{ c.id }}"
+                    data-title="{{ c.title|lower }}"
+                    data-personality="{{ c.personality_snapshot.get('name', '')|lower }}"
+                    data-has-messages="{% if c.messages|length > 0 %}true{% else %}false{% endif %}"
+                    data-messages-count="{{ c.messages|length }}"
+                >
+                    <!-- Cabecera de la Tarjeta -->
+                    <div class="chat-hub-card-top">
+                        <div class="chat-hub-card-personality">
+                            <div class="chat-hub-avatar">
+                                {{ c.personality_snapshot.get('avatar', '🤖')|avatar_html }}
+                            </div>
+                            <div class="chat-hub-personality-meta">
+                                <div class="chat-hub-name-row">
+                                    <h4 class="chat-hub-p-name" title="{{ c.personality_snapshot.get('name', 'Asistente') }}">
+                                        {{ c.personality_snapshot.get('name', 'Asistente') }}
+                                    </h4>
+                                    <span class="badge badge-version-tag">v{{ c.personality_version or c.personality_snapshot.get('version_number', 1) }}.0</span>
+                                </div>
+                                <span class="chat-hub-timestamp" title="{{ c.updated_at }}">
+                                    🕒 {{ c.updated_at|time_ago }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <form action="{{ url_for('chats.delete', chat_id=c.id) }}" method="POST" class="inline-form" onsubmit="return confirm('¿Eliminar esta conversación definitivamente?');">
+                            <button type="submit" class="btn-icon-danger" title="Eliminar conversación" id="btn-delete-hub-{{ c.id }}">
+                                🗑️
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Cuerpo de la Tarjeta -->
+                    <div class="chat-hub-card-body">
+                        <h3 class="chat-hub-title" title="{{ c.title }}">
+                            {{ c.title }}
+                        </h3>
+
+                        <div class="chat-hub-snippet">
+                            {% if c.messages and c.messages|length > 0 %}
+                                {% set last_msg = c.messages[-1] %}
+                                <div class="snippet-content">
+                                    <strong class="snippet-author">
+                                        {% if last_msg.role == 'user' %}Tú:{% else %}IA:{% endif %}
+                                    </strong>
+                                    <span class="snippet-text">{{ last_msg.content|truncate(110) }}</span>
+                                </div>
+                            {% else %}
+                                <div class="snippet-empty">
+                                    <em>Conversación creada, esperando tu primer mensaje.</em>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Pie de la Tarjeta -->
+                    <div class="chat-hub-card-footer">
+                        <div class="chat-hub-stats">
+                            <span class="stats-badge" title="Cantidad de mensajes">
+                                💬 {{ c.messages|length }} {% if c.messages|length == 1 %}mensaje{% else %}mensajes{% endif %}
+                            </span>
+                        </div>
+                        <a href="{{ url_for('chats.view_chat', chat_id=c.id) }}" class="btn btn-sm btn-primary btn-open-chat" id="btn-open-chat-{{ c.id }}">
+                            Continuar Chat →
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Mensaje de no resultados por búsqueda -->
+        <div class="hub-no-results" id="hub-no-results" style="display:none;">
+            <div class="empty-icon">🔍</div>
+            <h3>No se encontraron conversaciones</h3>
+            <p>No hay resultados que coincidan con los términos de búsqueda ingresados.</p>
+            <button type="button" class="btn btn-outline btn-sm" onclick="clearSearch()">Limpiar búsqueda</button>
+        </div>
+
+    {% else %}
+        <!-- Estado Vacío Cuando no hay ningún chat -->
+        <div class="hub-empty-state" id="hub-initial-empty">
+            <div class="empty-state-icon">💬✨</div>
+            <h2>Aún no tienes conversaciones activas</h2>
+            <p>
+                Inicia una conversación con cualquier personalidad oficial o creada por la comunidad para resolver dudas, practicar idiomas o crear historias.
+            </p>
+            <div class="empty-state-actions">
+                <button type="button" class="btn btn-primary btn-lg" onclick="openNewChatModal()">
+                    + Iniciar Primera Conversación
+                </button>
+            </div>
+
+            <!-- Sugerencias de Personalidades Oficiales -->
+            {% if system_personalities %}
+                <div class="empty-state-suggestions">
+                    <h3>💡 Sugerencias Populares para Empezar:</h3>
+                    <div class="suggestions-grid">
+                        {% for sp in system_personalities[:3] %}
+                            <div class="suggestion-card">
+                                <div class="suggestion-avatar">{{ sp.avatar|avatar_html }}</div>
+                                <div class="suggestion-info">
+                                    <h4>{{ sp.name }}</h4>
+                                    <p>{{ sp.description|truncate(70) }}</p>
+                                </div>
+                                <form action="{{ url_for('chats.create') }}" method="POST">
+                                    <input type="hidden" name="personality_id" value="{{ sp.id }}">
+                                    <button type="submit" class="btn btn-sm btn-primary">Chatear</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal para Seleccionar Personalidad e Iniciar Nueva Conversación -->
+<div class="modal-overlay" id="new-chat-modal" style="display:none;">
+    <div class="modal-card modal-lg">
+        <div class="modal-header">
+            <div class="modal-title-row">
+                <span class="modal-icon">✨</span>
+                <h3>Iniciar Nueva Conversación</h3>
+            </div>
+            <button type="button" class="modal-close" onclick="closeNewChatModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-instruction">Elige una personalidad con la cual deseas conversar:</p>
+            
+            <div class="modal-personalities-tabs">
+                <button type="button" class="modal-tab-btn active" id="modal-tab-official" onclick="switchModalTab('official')">
+                    Oficiales ({{ system_personalities|length }})
+                </button>
+                <button type="button" class="modal-tab-btn" id="modal-tab-mine" onclick="switchModalTab('mine')">
+                    Mis Personalidades ({{ my_personalities|length }})
+                </button>
+            </div>
+
+            <!-- Lista de Personalidades Oficiales -->
+            <div class="modal-p-list" id="modal-list-official">
+                {% for p in system_personalities %}
+                    <div class="modal-p-item">
+                        <div class="modal-p-avatar">{{ p.avatar|avatar_html }}</div>
+                        <div class="modal-p-info">
+                            <h4 class="modal-p-name">{{ p.name }} <span class="badge badge-system badge-xs">Oficial</span></h4>
+                            <p class="modal-p-desc">{{ p.description }}</p>
+                        </div>
+                        <form action="{{ url_for('chats.create') }}" method="POST">
+                            <input type="hidden" name="personality_id" value="{{ p.id }}">
+                            <button type="submit" class="btn btn-sm btn-primary">💬 Chatear</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Lista de Mis Personalidades -->
+            <div class="modal-p-list" id="modal-list-mine" style="display:none;">
+                {% for p in my_personalities %}
+                    <div class="modal-p-item">
+                        <div class="modal-p-avatar">{{ p.avatar|avatar_html }}</div>
+                        <div class="modal-p-info">
+                            <h4 class="modal-p-name">{{ p.name }} <span class="badge badge-category badge-xs">{{ p.category }}</span></h4>
+                            <p class="modal-p-desc">{{ p.description }}</p>
+                        </div>
+                        <form action="{{ url_for('chats.create') }}" method="POST">
+                            <input type="hidden" name="personality_id" value="{{ p.id }}">
+                            <button type="submit" class="btn btn-sm btn-primary">💬 Chatear</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="modal-empty-tab">
+                        <p>Aún no has creado personalidades propias.</p>
+                        <a href="{{ url_for('personalities.create') }}" class="btn btn-sm btn-outline">+ Crear Personalidad</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="{{ url_for('community.index') }}" class="btn btn-outline btn-sm">🌍 Explorar Comunidad</a>
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeNewChatModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openNewChatModal() {
+        const modal = document.getElementById('new-chat-modal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeNewChatModal() {
+        const modal = document.getElementById('new-chat-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function switchModalTab(tab) {
+        const offList = document.getElementById('modal-list-official');
+        const mineList = document.getElementById('modal-list-mine');
+        const offTab = document.getElementById('modal-tab-official');
+        const mineTab = document.getElementById('modal-tab-mine');
+
+        if (tab === 'official') {
+            if (offList) offList.style.display = 'flex';
+            if (mineList) mineList.style.display = 'none';
+            if (offTab) offTab.classList.add('active');
+            if (mineTab) mineTab.classList.remove('active');
+        } else {
+            if (offList) offList.style.display = 'none';
+            if (mineList) mineList.style.display = 'flex';
+            if (offTab) offTab.classList.remove('active');
+            if (mineTab) mineTab.classList.add('active');
+        }
+    }
+
+    let currentFilterType = 'all';
+
+    function setQuickFilter(type, btn) {
+        currentFilterType = type;
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        applyFilters();
+    }
+
+    function filterChats(query) {
+        const clearBtn = document.getElementById('btn-clear-search');
+        if (clearBtn) {
+            clearBtn.style.display = query && query.trim().length > 0 ? 'inline-flex' : 'none';
+        }
+        applyFilters();
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('chat-search-input');
+        if (input) {
+            input.value = '';
+            filterChats('');
+        }
+    }
+
+    function applyFilters() {
+        const input = document.getElementById('chat-search-input');
+        const query = (input ? input.value : '').toLowerCase().trim();
+        const cards = document.querySelectorAll('.chat-hub-card');
+        const noResults = document.getElementById('hub-no-results');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const title = card.getAttribute('data-title') || '';
+            const personality = card.getAttribute('data-personality') || '';
+            const textContent = card.innerText.toLowerCase();
+            const hasMessages = card.getAttribute('data-has-messages') === 'true';
+
+            // Match query
+            const matchesQuery = !query || title.includes(query) || personality.includes(query) || textContent.includes(query);
+
+            // Match filter tab
+            let matchesFilter = true;
+            if (currentFilterType === 'active') {
+                matchesFilter = hasMessages;
+            } else if (currentFilterType === 'empty') {
+                matchesFilter = !hasMessages;
+            }
+
+            if (matchesQuery && matchesFilter) {
+                card.style.display = 'flex';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        if (noResults) {
+            noResults.style.display = (visibleCount === 0 && cards.length > 0) ? 'flex' : 'none';
+        }
+    }
+
+    // Cerrar modal al presionar ESC o hacer click fuera
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeNewChatModal();
+    });
+
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('new-chat-modal');
+        if (e.target === modal) closeNewChatModal();
+    });
+</script>
+{% endblock %}

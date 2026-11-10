@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Personalidad Eliminada - PersonaAI{% endblock %}
+
+{% block content %}
+<div class="page-container" id="personality-deleted-page">
+    <div class="deleted-notice-card">
+        <div class="deleted-icon-wrapper">
+            <span class="deleted-icon">🗑️</span>
+        </div>
+        
+        <h1 class="deleted-title">Esta personalidad ha sido eliminada</h1>
+        <p class="deleted-subtitle">
+            El autor o creador de esta personalidad decidió retirarla del sistema.
+        </p>
+
+        <div class="deleted-info-box">
+            <div class="deleted-info-item">
+                <span class="info-bullet">💡</span>
+                <div>
+                    <strong>¿Tenías una conversación activa con ella?</strong>
+                    <p>¡No te preocupes! Todas tus conversaciones existentes conservan su memoria, instrucciones y avatar intactos mediante un snapshot seguro, por lo que puedes seguir chateando con normalidad.</p>
+                </div>
+            </div>
+            <div class="deleted-info-item">
+                <span class="info-bullet">🔍</span>
+                <div>
+                    <strong>¿Buscabas nuevos asistentes?</strong>
+                    <p>Puedes explorar cientos de personalidades públicas creadas por la comunidad o las personalidades oficiales del sistema.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="deleted-actions-row">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary" id="btn-return-dashboard">
+                📊 Ir a Mis Chats
+            </a>
+            <a href="{{ url_for('community.index') }}" class="btn btn-outline" id="btn-explore-community">
+                🌐 Explorar Comunidad
+            </a>
+            <a href="{{ url_for('personalities.index') }}" class="btn btn-outline" id="btn-my-personalities">
+                🎭 Mis Personalidades
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
