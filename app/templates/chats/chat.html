@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ active_chat.title }} - PersonaAI{% endblock %}
+{% block title %}{{ active_chat.title }} - DoChat{% endblock %}
 {% block body_class %}page-chat-active{% endblock %}
 
 {% block content %}
@@ -55,9 +55,6 @@
                     <h2 class="chat-personality-name">{{ active_chat.personality_snapshot.get('name', 'Asistente IA') }}</h2>
                     <span class="badge badge-version-active" id="current-version-tag" title="Versión activa en este chat">
                         v{{ active_chat.personality_version or active_chat.personality_snapshot.get('version_number', 1) }}.0
-                    </span>
-                    <span class="badge" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; border: 1px solid rgba(79, 70, 229, 0.2); font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px;" title="Proveedor: {{ current_ai_provider|upper }} | Endpoint: {{ current_ai_url }}">
-                        🤖 {{ current_ai_provider|upper }}: {{ current_ai_model }}
                     </span>
                     {% if personality and personality.current_version > (active_chat.personality_version or 1) %}
                         <span class="badge badge-version-update" onclick="openVersionModal()" title="¡Hay una nueva versión de esta personalidad disponible!">

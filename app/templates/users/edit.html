@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Perfil - PersonaAI{% endblock %}
+{% block title %}Editar Perfil - DoChat{% endblock %}
 
 {% block content %}
 <div class="form-page-container" id="edit-profile-page">
@@ -8,7 +8,7 @@
         <div class="form-card-header">
             <div class="form-header-icon">👤</div>
             <h1>Editar Mi Perfil</h1>
-            <p>Personaliza tu información pública y tu avatar.</p>
+            <p>Personaliza tu información y foto de perfil en DoChat.</p>
         </div>
 
         <form action="{{ url_for('users.edit_profile') }}" method="POST" enctype="multipart/form-data" class="personality-form" id="edit-profile-form">
@@ -23,75 +23,35 @@
                 <input type="email" class="form-control" value="{{ user.email }}" disabled>
             </div>
 
-            <!-- Selector de Avatar Flexible: Emoji o Imagen / Subida -->
+            <!-- Carga de Imagen de Perfil (Sin íconos/emojis) -->
             <div class="form-group avatar-customizer-box">
-                <label class="form-label">Avatar de Perfil (Emoji o Imagen)</label>
-                <div class="avatar-builder-container">
+                <label class="form-label">Foto de Perfil</label>
+                <div class="avatar-builder-container" style="display: flex; gap: 1rem; align-items: center;">
                     <!-- Vista previa en vivo -->
-                    <div class="avatar-preview-wrapper" id="avatar-preview-box">
+                    <div class="avatar-preview-wrapper" id="avatar-preview-box" style="width: 72px; height: 72px; min-width: 72px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-subtle); border: 2px solid var(--border-color);">
                         <span id="avatar-preview-display">{{ user.avatar|avatar_html(default='👤') }}</span>
                     </div>
 
-                    <div class="avatar-builder-controls">
-                        <!-- Pestañas de modo -->
-                        <div class="avatar-type-tabs">
-                            <button type="button" class="avatar-tab-btn {% if not user.avatar or not is_image_avatar(user.avatar) %}active{% endif %}" data-tab="emoji" onclick="setAvatarMode('emoji')">🎭 Emoji</button>
-                            <button type="button" class="avatar-tab-btn {% if user.avatar and is_image_avatar(user.avatar) and not user.avatar.startswith('/static/uploads/') %}active{% endif %}" data-tab="url" onclick="setAvatarMode('url')">🔗 URL Imagen</button>
-                            <button type="button" class="avatar-tab-btn {% if user.avatar and user.avatar.startswith('/static/uploads/') %}active{% endif %}" data-tab="file" onclick="setAvatarMode('file')">📁 Subir Imagen</button>
-                        </div>
-                        <input type="hidden" name="avatar_type" id="avatar_type_field" value="{% if user.avatar and user.avatar.startswith('/static/uploads/') %}file{% elif user.avatar and is_image_avatar(user.avatar) %}url{% else %}emoji{% endif %}">
-
-                        <!-- Panel 1: Emoji -->
-                        <div class="avatar-panel {% if user.avatar and is_image_avatar(user.avatar) %}hidden{% endif %}" id="panel-avatar-emoji">
-                            <div class="avatar-input-row">
-                                <input 
-                                    type="text" 
-                                    id="avatar" 
-                                    name="avatar" 
-                                    class="form-control avatar-input" 
-                                    value="{% if not is_image_avatar(user.avatar) %}{{ user.avatar or '👤' }}{% else %}👤{% endif %}" 
-                                    placeholder="👤"
-                                    oninput="updateAvatarPreviewEmoji(this.value)"
-                                >
-                                <div class="avatar-quick-select">
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('👤')">👤</button>
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('👨‍💻')">👨‍💻</button>
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('👩‍💻')">👩‍💻</button>
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🧙‍♂️')">🧙‍♂️</button>
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🚀')">🚀</button>
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🤖')">🤖</button>
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('🦊')">🦊</button>
-                                    <button type="button" class="avatar-opt" onclick="selectEmoji('⚡')">⚡</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Panel 2: URL de Imagen -->
-                        <div class="avatar-panel {% if not user.avatar or not is_image_avatar(user.avatar) or user.avatar.startswith('/static/uploads/') %}hidden{% endif %}" id="panel-avatar-url">
-                            <input 
-                                type="url" 
-                                id="avatar_url" 
-                                name="avatar_url" 
-                                class="form-control" 
-                                placeholder="https://ejemplo.com/mi-foto.png"
-                                value="{% if is_image_avatar(user.avatar) and not user.avatar.startswith('/static/uploads/') %}{{ user.avatar }}{% endif %}"
-                                oninput="updateAvatarPreviewUrl(this.value)"
-                            >
-                            <small class="form-hint">Pega el enlace directo a tu foto de perfil en internet.</small>
-                        </div>
-
-                        <!-- Panel 3: Subir Archivo -->
-                        <div class="avatar-panel {% if not user.avatar or not user.avatar.startswith('/static/uploads/') %}hidden{% endif %}" id="panel-avatar-file">
-                            <input 
-                                type="file" 
-                                id="avatar_file" 
-                                name="avatar_file" 
-                                class="form-control file-input" 
-                                accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
-                                onchange="previewUploadedImage(this)"
-                            >
-                            <small class="form-hint">Sube una foto desde tu dispositivo (PNG, JPG, WEBP, GIF, SVG).</small>
-                        </div>
+                    <div class="avatar-builder-controls" style="flex: 1;">
+                        <input type="hidden" name="avatar_type" id="avatar_type_field" value="file">
+                        <input 
+                            type="file" 
+                            id="avatar_file" 
+                            name="avatar_file" 
+                            class="form-control file-input" 
+                            accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+                            onchange="previewUploadedImage(this)"
+                        >
+                        <input 
+                            type="url" 
+                            id="avatar_url" 
+                            name="avatar_url" 
+                            class="form-control mt-2" 
+                            placeholder="O pega el enlace a una imagen pública en internet..."
+                            value="{% if is_image_avatar(user.avatar) and not user.avatar.startswith('/static/uploads/') %}{{ user.avatar }}{% endif %}"
+                            oninput="updateAvatarPreviewUrl(this.value)"
+                            style="margin-top: 0.45rem; font-size: 0.88rem;"
+                        >
                     </div>
                 </div>
             </div>

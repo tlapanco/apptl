@@ -3,11 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Asistente IA con Personalidades{% endblock %}</title>
+    <title>{% block title %}DoChat - Plataforma Inteligente de Conversación{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('dochat_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -16,8 +22,8 @@
         <div class="header-container">
             <div class="header-brand">
                 <a href="{{ url_for('dashboard.index') if current_user.is_authenticated else url_for('auth.login') }}" class="brand-logo" id="nav-brand-logo">
-                    <span class="logo-icon">✨</span>
-                    <span class="logo-text">PersonaAI</span>
+                    <span class="logo-icon">💬</span>
+                    <span class="logo-text">DoChat</span>
                 </a>
             </div>
 
@@ -30,7 +36,7 @@
                         💬 Mis Chats
                     </a>
                     <a href="{{ url_for('personalities.index') }}" class="nav-link {% if request.endpoint and 'personalities' in request.endpoint and request.endpoint != 'personalities.create' %}active{% endif %}" id="nav-link-personalities">
-                        🎭 Mis Personalidades
+                        🎭 Personalidades
                     </a>
                     <a href="{{ url_for('community.index') }}" class="nav-link {% if request.endpoint == 'community.index' %}active{% endif %}" id="nav-link-community">
                         🌍 Comunidad
@@ -46,6 +52,10 @@
             </nav>
 
             <div class="header-actions" id="header-user-actions">
+                <button type="button" class="btn btn-sm btn-outline theme-toggle-btn" id="theme-toggle" aria-label="Alternar modo oscuro / claro" title="Alternar modo claro / oscuro">
+                    <span class="theme-icon">🌙</span>
+                </button>
+
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('personalities.create') }}" class="btn btn-sm btn-primary" id="btn-header-create-personality">
                         + Nueva Personalidad
@@ -103,8 +113,7 @@
     <footer class="app-footer" id="app-footer">
         <div class="footer-container">
             <p>
-                Plataforma de Asistente IA con Personalidades &bull; 
-                Proveedor activo: <strong>{{ current_ai_provider|upper }}</strong> (Modelo: <code>{{ current_ai_model }}</code> &bull; Endpoint: <code>{{ current_ai_url }}</code>)
+                &copy; 2026 <strong>DoChat</strong> &bull; Plataforma Inteligente de Conversación
             </p>
         </div>
     </footer>

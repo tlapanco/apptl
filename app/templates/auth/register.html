@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Crear Cuenta - PersonaAI{% endblock %}
+{% block title %}Crear Cuenta - DoChat{% endblock %}
 
 {% block content %}
 <div class="auth-wrapper" id="auth-register-page">
     <div class="auth-card" id="register-card">
         <div class="auth-header">
-            <div class="auth-icon">🚀</div>
-            <h1 class="auth-title">Crear Cuenta</h1>
-            <p class="auth-subtitle">Únete para chatear, crear personalidades únicas y compartirlas</p>
+            <div class="auth-icon">💬</div>
+            <h1 class="auth-title">Crear Cuenta en DoChat</h1>
+            <p class="auth-subtitle">Crea tu perfil para chatear con inteligencias artificiales y conectar con la comunidad</p>
         </div>
 
-        <form action="{{ url_for('auth.register') }}" method="POST" class="auth-form" id="register-form">
+        <form action="{{ url_for('auth.register') }}" method="POST" enctype="multipart/form-data" class="auth-form" id="register-form">
             <div class="form-group">
                 <label for="username" class="form-label">Nombre de Usuario</label>
                 <input 
@@ -57,24 +57,38 @@
                 >
             </div>
 
-            <div class="form-group">
-                <label for="avatar" class="form-label">Avatar Emoji</label>
-                <div class="avatar-picker-row">
-                    <input 
-                        type="text" 
-                        id="avatar" 
-                        name="avatar" 
-                        class="form-control avatar-input" 
-                        value="{{ avatar or '👤' }}" 
-                        maxlength="4"
-                    >
-                    <div class="avatar-quick-select">
-                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='👤'">👤</button>
-                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='👨‍💻'">👨‍💻</button>
-                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='👩‍💻'">👩‍💻</button>
-                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='🧙‍♂️'">🧙‍♂️</button>
-                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='🚀'">🚀</button>
-                        <button type="button" class="avatar-opt" onclick="document.getElementById('avatar').value='🤖'">🤖</button>
+            <!-- Carga de Imagen de Perfil (Sin íconos/emojis) -->
+            <div class="form-group avatar-customizer-box">
+                <label class="form-label">Foto de Perfil</label>
+                <div class="avatar-builder-container" style="display: flex; gap: 1rem; align-items: center;">
+                    <div class="avatar-preview-wrapper" id="avatar-preview-box" style="width: 64px; height: 64px; min-width: 64px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-subtle); border: 2px solid var(--border-color);">
+                        <span id="avatar-preview-display">
+                            {% if avatar and (avatar.startswith('http') or avatar.startswith('/static/')) %}
+                                <img src="{{ avatar }}" alt="Preview" class="avatar-image" style="width: 100%; height: 100%; object-fit: cover;" />
+                            {% else %}
+                                <span style="font-size: 1.8rem; color: var(--text-muted);">📷</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="avatar-builder-controls" style="flex: 1;">
+                        <input 
+                            type="file" 
+                            id="avatar_file" 
+                            name="avatar_file" 
+                            class="form-control file-input" 
+                            accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+                            onchange="previewRegisterImage(this)"
+                        >
+                        <input 
+                            type="url" 
+                            id="avatar_url" 
+                            name="avatar_url" 
+                            class="form-control mt-2" 
+                            placeholder="O pega una URL de imagen..."
+                            value="{{ avatar if avatar and (avatar.startswith('http') or avatar.startswith('/static/')) else '' }}"
+                            oninput="previewRegisterImageUrl(this.value)"
+                            style="margin-top: 0.4rem; font-size: 0.85rem;"
+                        >
                     </div>
                 </div>
             </div>
@@ -86,7 +100,7 @@
                     name="bio" 
                     class="form-control" 
                     rows="2" 
-                    placeholder="Cuéntanos un poco sobre tus intereses o proyectos..."
+                    placeholder="Cuéntanos un poco sobre tus intereses..."
                     maxlength="200"
                 >{{ bio or '' }}</textarea>
             </div>
@@ -101,4 +115,29 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewRegisterImage(input) {
+    const display = document.getElementById('avatar-preview-display');
+    if (!display) return;
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            display.innerHTML = '<img src="' + e.target.result + '" alt="Preview" class="avatar-image" style="width: 100%; height: 100%; object-fit: cover;" />';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+function previewRegisterImageUrl(url) {
+    const display = document.getElementById('avatar-preview-display');
+    if (!display) return;
+    if (url && url.trim()) {
+        display.innerHTML = '<img src="' + encodeURI(url.trim()) + '" alt="Preview" class="avatar-image" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML=\'<span style=\\\'font-size: 1.8rem; color: var(--text-muted);\\\'>📷</span>\';" />';
+    } else {
+        display.innerHTML = '<span style="font-size: 1.8rem; color: var(--text-muted);">📷</span>';
+    }
+}
+</script>
 {% endblock %}

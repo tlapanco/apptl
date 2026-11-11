@@ -375,8 +375,8 @@ class AIService:
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://personaai.local",
-            "X-Title": "PersonaAI",
+            "HTTP-Referer": "https://dochat.local",
+            "X-Title": "DoChat",
         }
 
         payload = {

@@ -43,6 +43,140 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+[data-theme="dark"] {
+    --bg-main: #0b0f19;
+    --bg-card: #111827;
+    --bg-sidebar: #0e1526;
+    --bg-subtle: #1f293d;
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-inverse: #0b0f19;
+
+    --brand-primary: #6366f1;
+    --brand-primary-hover: #4f46e5;
+    --brand-light: #1e1b4b;
+    --brand-accent: #38bdf8;
+
+    --border-color: #1f293d;
+    --border-focus: #818cf8;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+
+    --success: #10b981;
+    --success-bg: #064e3b;
+    --warning: #f59e0b;
+    --warning-bg: #78350f;
+    --danger: #ef4444;
+    --danger-bg: #7f1d1d;
+    --info: #3b82f6;
+    --info-bg: #1e3a8a;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    font-size: 1.15rem;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    user-select: none;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--bg-subtle);
+    border-color: var(--brand-primary);
+    transform: scale(1.05);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+/* Dark Mode Specific Overrides */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .chat-textarea,
+[data-theme="dark"] select.form-control,
+[data-theme="dark"] textarea.form-control {
+    background-color: #162032;
+    border-color: #27354f;
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .chat-textarea:focus {
+    background-color: #182438;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="dark"] .message-assistant .message-text {
+    background-color: #151e32;
+    border-color: #243048;
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .message-text code {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .chat-history-item-wrapper:hover {
+    background-color: #162032;
+}
+
+[data-theme="dark"] .chat-history-item-wrapper.active {
+    background-color: #1f2a44;
+    border-left-color: var(--brand-primary);
+}
+
+[data-theme="dark"] .detail-card,
+[data-theme="dark"] .personality-card,
+[data-theme="dark"] .stat-pill,
+[data-theme="dark"] .detail-hero-card {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .category-pill {
+    background: #1f293d;
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .category-pill.active {
+    background: var(--brand-primary);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .tab-btn {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .tab-btn.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--brand-primary);
+}
+
+[data-theme="dark"] .version-item {
+    background: #162032;
+    border-color: #27354f;
+}
+
+[data-theme="dark"] .version-item.active {
+    border-color: var(--brand-primary);
+    background: #1a233a;
+}
+
 /* Reset & Base */
 *, *::before, *::after {
     box-sizing: border-box;

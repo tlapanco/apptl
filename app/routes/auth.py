@@ -16,7 +16,19 @@ def register():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         bio = request.form.get("bio", "").strip()
-        avatar = request.form.get("avatar", "👤")
+        
+        avatar = "👤"
+        if "avatar_file" in request.files and request.files["avatar_file"].filename:
+            from app.utils.avatar_helper import save_avatar_file
+            saved_url, file_err = save_avatar_file(request.files["avatar_file"])
+            if file_err:
+                flash(file_err, "warning")
+            elif saved_url:
+                avatar = saved_url
+        elif request.form.get("avatar_url", "").strip():
+            avatar = request.form.get("avatar_url", "").strip()
+        elif request.form.get("avatar", "").strip():
+            avatar = request.form.get("avatar", "").strip()
 
         user, error = auth_service.register(
             email=email,
@@ -31,7 +43,7 @@ def register():
             return render_template("auth/register.html", email=email, username=username, bio=bio, avatar=avatar), 400
 
         login_user(user)
-        flash(f"¡Bienvenido a la plataforma, @{user.username}!", "success")
+        flash(f"¡Bienvenido a DoChat, @{user.username}!", "success")
         return redirect(url_for("dashboard.index"))
 
     return render_template("auth/register.html")

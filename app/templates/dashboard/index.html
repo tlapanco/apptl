@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - PersonaAI{% endblock %}
+{% block title %}Dashboard - DoChat{% endblock %}
 
 {% block content %}
 <div class="dashboard-layout" id="dashboard-main-view">
@@ -92,31 +92,6 @@
                 <a href="{{ url_for('community.index') }}" class="btn btn-outline" id="btn-welcome-explore">
                     Explorar Comunidad
                 </a>
-            </div>
-        </div>
-
-        <!-- Estado de Configuración del Proveedor de IA Activo -->
-        <div class="ai-provider-info-banner" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; margin-top: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-            <div style="display: flex; align-items: center; gap: 0.85rem;">
-                <span style="font-size: 1.5rem;">⚙️</span>
-                <div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <strong style="font-size: 0.95rem; color: #1e293b;">Proveedor IA:</strong>
-                        <span style="background: #4f46e5; color: #ffffff; padding: 0.15rem 0.55rem; border-radius: 6px; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">{{ current_ai_provider }}</span>
-                        {% if current_ai_provider == 'ollama' %}
-                            <span style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Ollama (Local / Endpoints)</span>
-                        {% else %}
-                            <span style="background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">OpenRouter (Cloud)</span>
-                        {% endif %}
-                    </div>
-                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.2rem;">
-                        Modelo: <code style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 4px; color: #0f172a; font-weight: 600;">{{ current_ai_model }}</code>
-                        &bull; URL / Servidor: <code style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.1rem 0.4rem; border-radius: 4px; color: #0f172a;">{{ current_ai_url }}</code>
-                    </div>
-                </div>
-            </div>
-            <div style="font-size: 0.78rem; color: #94a3b8; text-align: right;">
-                Configurable en <code>app/config/settings.py</code> &bull; <code>ai_config.py</code> &bull; <code>.env</code>
             </div>
         </div>
 

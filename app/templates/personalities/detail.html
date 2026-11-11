@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ personality.name }} - PersonaAI{% endblock %}
+{% block title %}{{ personality.name }} - DoChat{% endblock %}
 
 {% block content %}
 <div class="page-container" id="personality-detail-page">
@@ -26,7 +26,7 @@
 
                 <div class="detail-creator-row">
                     {% if personality.is_system %}
-                        <span class="creator-badge">✨ Creado por: <strong>Equipo PersonaAI</strong></span>
+                        <span class="creator-badge">✨ Creado por: <strong>Equipo DoChat</strong></span>
                     {% elif owner %}
                         <span class="creator-badge">
                             👤 Creado por: 

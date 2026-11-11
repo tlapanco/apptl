@@ -69,4 +69,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // 3. Control de Modo Oscuro / Claro
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const updateThemeUI = (theme) => {
+        if (!themeToggleBtn) return;
+        const icon = themeToggleBtn.querySelector('.theme-icon');
+        if (icon) {
+            icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+        themeToggleBtn.setAttribute('title', theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+    };
+
+    const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    updateThemeUI(initialTheme);
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('dochat_theme', newTheme);
+            updateThemeUI(newTheme);
+        });
+    }
 });
+
